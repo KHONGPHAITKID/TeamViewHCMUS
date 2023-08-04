@@ -1,7 +1,7 @@
-#TeamViewHCMUS
+# TeamViewHCMUS
 TeamViewHCMUS is a simple TeamViewer clone project that allows remote screen sharing and control between two computers.
 
-#How to Run the Project
+# How to Run the Project
 To run the project, follow these steps:
 
 1. Set Up the Environment
@@ -24,7 +24,7 @@ The client will connect to the server.
 4. Establish Connection
 Once the client has connected to the server, you should see a message indicating a successful connection. You can now begin screen sharing and control between the two computers.
 
-#Features
+# Features
 Remote screen sharing
 Remote control of the shared screen
 Troubleshooting
@@ -35,8 +35,8 @@ Double-check that you have installed all the required packages as mentioned in t
 Contributing
 We welcome contributions to improve TeamViewHCMUS. If you would like to contribute, please follow the guidelines in CONTRIBUTING.md.
 
-#License
+# License
 This project is licensed under the MIT License.
 
-#Contact
+# Contact
 For any questions or inquiries, you can reach us at teamviewhcmus@example.com.
