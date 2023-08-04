@@ -32,11 +32,3 @@ If you encounter any issues while running the project, consider the following tr
 
 Make sure both computers are connected to the same network.
 Double-check that you have installed all the required packages as mentioned in the setup section.
-Contributing
-We welcome contributions to improve TeamViewHCMUS. If you would like to contribute, please follow the guidelines in CONTRIBUTING.md.
-
-# License
-This project is licensed under the MIT License.
-
-# Contact
-For any questions or inquiries, you can reach us at teamviewhcmus@example.com.
