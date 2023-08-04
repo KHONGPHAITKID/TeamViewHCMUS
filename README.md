@@ -7,18 +7,18 @@ To run the project, follow these steps:
 1. Set Up the Environment
 Make sure you have Python installed on both computers. The project requires the following Python packages, which can be installed using pip:
 
-pip install package1 package2 package3
+`pip install package1 package2 package3`
 
 2. Start the Server
 On one computer, open a terminal or command prompt and navigate to the project's directory. Then, run the following command to start the server:
 
-python server.py
+`python server.py`
 The server will wait for the client to connect.
 
 3. Start the Client
 On the other computer, open a terminal or command prompt and navigate to the project's directory. Then, run the following command to start the client:
 
-python client.py
+`python client.py`
 The client will connect to the server.
 
 4. Establish Connection
