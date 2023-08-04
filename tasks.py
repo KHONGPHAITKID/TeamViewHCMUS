@@ -1,13 +1,13 @@
 def send_keystroke():
-    print("KeyStroke")
+    print("KeyStroke...")
     pass
 
 def take_screenshot():
-    print("Screenshot")
+    print("Screenshot...")
     pass
 
 def Running():
-    print("Running")
+    print("Running...")
     pass
 
 def process():
@@ -15,9 +15,9 @@ def process():
     pass
 
 def ShutDown():
-    print("Shutting down")
+    print("Shutting down...")
     pass
 
 def Fixing():
-    print("Fixing...")
+    print("Fixing Registry...")
     pass

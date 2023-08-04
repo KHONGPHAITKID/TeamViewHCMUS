@@ -28,39 +28,29 @@ SubmitButton = tk.Button(root, text="Submit", width=14, command=submit_button_cl
 SubmitButton.place(x=500, y = 75)
 
 
-ProcessButton = tk.Button(
+ProcessRunningButton = tk.Button(
     root,
     text="Process\nrunning",
     width=10,
     height=16,
-    bg="blue",
-    fg="yellow",
     font=("Helvetica", 14, "bold"),
     relief=tk.RAISED,
     bd=3,
-    activebackground="darkblue",
-    activeforeground="yellow",
     command=tasks.process,
     highlightthickness=2,
-    highlightbackground="black",
 )
-ProcessButton.place(x=35, y=120)
+ProcessRunningButton.place(x=35, y=120)
 
 AppRunningButton = tk.Button(
     root,
     text="App running",
     width=20,
     height=4,
-    bg="blue",
-    fg="yellow",
     font=("Helvetica", 14, "bold"),
     relief=tk.RAISED,
     bd=3,
-    activebackground="darkblue",
-    activeforeground="yellow",
     command=tasks.Running,
     highlightthickness=2,
-    highlightbackground="black",
 )
 AppRunningButton.place(x=185, y=120)
 
@@ -69,91 +59,63 @@ KeyStrokeButton = tk.Button(
     text="Keystroke",
     width=12,
     height=11,
-    bg="blue",
-    fg="yellow",
     font=("Helvetica", 14, "bold"),
     relief=tk.RAISED,
     bd=3,
-    activebackground="darkblue",
-    activeforeground="yellow",
     command=tasks.send_keystroke,
     highlightthickness=2,
-    highlightbackground="black",
 )
 KeyStrokeButton.place(x=450, y=120)
 
 ShutDownButton = tk.Button(
     root,
-    text="Tắt\nmáy",
-    width=7,
+    text="Shut down",
+    width=8,
     height=5,
-    bg="blue",
-    fg="yellow",
     font=("Helvetica", 15, "bold"),
     relief=tk.RAISED,
     bd=3,
-    activebackground="darkblue",
-    activeforeground="yellow",
     command=tasks.ShutDown,
     highlightthickness=2,
-    highlightbackground="black",
 )
 ShutDownButton.place(x=185, y=241)
 
 ScreenShotButton = tk.Button(
     root,
-    text="Screen\nShoot",
+    text="ScreenShot",
     width=10,
     height=5,
-    bg="blue",
-    fg="yellow",
     font=("Helvetica", 15, "bold"),
     relief=tk.RAISED,
     bd=3,
-    activebackground="darkblue",
-    activeforeground="yellow",
     command=tasks.take_screenshot,
     highlightthickness=2,
-    highlightbackground="black",
 )
 ScreenShotButton.place(x=304, y=241)
 
-FixButton = tk.Button(
+FixRegistryButton = tk.Button(
     root,
-    text="Sửa Regis...",
+    text="Fixing Registry",
     width=26,
     height=3,
-    bg="blue",
-    fg="yellow",
     font=("Helvetica", 15, "bold"),
     relief=tk.RAISED,
     bd=3,
-    activebackground="darkblue",
-    activeforeground="yellow",
     command=tasks.Fixing,
     highlightthickness=2,
-    highlightbackground="black",
 )
-FixButton.place(x=185, y=399)
-# 180-405
-# 383
-# 405 ~ 22 pixel
+FixRegistryButton.place(x=185, y=399)
 
 QuitButton = tk.Button(
     root,
     text="Quit",
     width=6,
     height=3,
-    bg="blue",
-    fg="yellow",
     font=("Helvetica", 15, "bold"),
     relief=tk.RAISED,
     bd=3,
-    activebackground="darkblue",
-    activeforeground="yellow",
     command=QuitFunction,
     highlightthickness=2,
-    highlightbackground="black",
 )
 QuitButton.place(x=522, y=399)
 
