@@ -2,6 +2,7 @@ import cv2
 import pyautogui
 from time import time
 import numpy as np
+import os
 
 def send_keystroke():
     key = input("Enter the keystroke to send: ")
