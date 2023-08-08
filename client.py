@@ -1,7 +1,7 @@
 import tkinter as tk
 import tasks
 
-def QuitFunction():
+def Quit():
     print("Program Close!")
     root.quit()  # Close the program
 
@@ -13,20 +13,20 @@ def submit_button_click():
 def on_enter_key(event):
     submit_button_click()
 
-EnterFirstTime = False
+# Building the Client UI
 root = tk.Tk()
 root.geometry("650x550")
+root.resizable(False, False)
 
 inputMessage = tk.StringVar()
 inputMessage.set("")
 
-input_textbox = tk.Entry(root, width=75, textvariable=inputMessage)
+input_textbox = tk.Entry(root, width=50, textvariable=inputMessage)
 input_textbox.place(x=35, y=80)
 input_textbox.bind("<Return>", on_enter_key)
 
-SubmitButton = tk.Button(root, text="Submit", width=14, command=submit_button_click)
+SubmitButton = tk.Button(root, text="Submit", width=10, command=submit_button_click)
 SubmitButton.place(x=500, y = 75)
-
 
 ProcessRunningButton = tk.Button(
     root,
@@ -101,7 +101,7 @@ FixRegistryButton = tk.Button(
     font=("Helvetica", 15, "bold"),
     relief=tk.RAISED,
     bd=3,
-    command=tasks.Fixing,
+    command=tasks.FixRegistry,
     highlightthickness=2,
 )
 FixRegistryButton.place(x=185, y=399)
@@ -114,7 +114,7 @@ QuitButton = tk.Button(
     font=("Helvetica", 15, "bold"),
     relief=tk.RAISED,
     bd=3,
-    command=QuitFunction,
+    command=Quit,
     highlightthickness=2,
 )
 QuitButton.place(x=522, y=399)
