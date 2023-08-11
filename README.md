@@ -26,7 +26,7 @@ Once the client has connected to the server, you should see a message indicating
 
 # Features
 Remote screen sharing
-Remote control of the shared screen
+Remote control of the shared screen.
 Troubleshooting
 If you encounter any issues while running the project, consider the following troubleshooting steps:
 
