@@ -2,6 +2,7 @@ import socket
 import pyautogui
 from PIL import ImageGrab
 import io
+import os
 
 HOST = "127.0.0.1"
 PORT = 65431
@@ -22,6 +23,14 @@ def take_screenshot(client_socket):
         image_data = file.read(2048)
     file.close()
     print("Screenshot sent")
+
+    # Remove the picture
+    image_path = "screenshot.png"
+    try:
+        os.remove(image_path)
+        print(f"Image {image_path} deleted successfully.")
+    except OSError as e:
+        print(f"Error deleting image: {e}")
 
 def app_running_check(app_name):
     print(f"Checking if {app_name} is running...")
