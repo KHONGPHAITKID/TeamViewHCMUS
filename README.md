@@ -25,9 +25,9 @@ The client will connect to the server.
 Once the client has connected to the server, you should see a message indicating a successful connection. You can now begin screen sharing and control between the two computers.
 
 # Features
-Remote screen sharing
-Remote control of the shared screen.
-Troubleshooting
+- Remote screen sharing
+- Remote control of the shared screen.
+# Troubleshooting
 If you encounter any issues while running the project, consider the following troubleshooting steps:
 
 Make sure both computers are connected to the same network.
