@@ -1,6 +1,5 @@
 __pycache__
 test.py
-pic1.png
 .screenshot*
-received_image.png
-screenshot.png
+*.png
+*.jpg

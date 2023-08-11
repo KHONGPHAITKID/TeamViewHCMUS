@@ -1,16 +1,9 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox,filedialog
 import socket
-import cv2
-import pyautogui
-from time import time
-import numpy as np
 import os
-from threading import Thread
-from PIL import Image
-import io
+from PIL import Image, ImageTk, ImageGrab
 
-# "127.0.0.1"
 host = "127.0.0.1"
 port = 65431
 timeout = 3
@@ -64,22 +57,64 @@ def submit_button_click(event=None):
     connect(user_input)
     InputTextbox.delete(0, tk.END)
 
-
-# def FixRegistry():
-#     send_command("FixRegistry")
-#     print("Fixing Registry...")
+def FixRegistry():
+    send_command("FixRegistry")
+    print("Fixing Registry...")
 
 def Handle_send_keystroke():
     pass
 
-def Handle_take_screenshot():
-    file = open("received_image.png", "wb")
+def SaveImage(image_path):
+    image = Image.open(image_path)
+    file_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG files", "*.png")])
+    
+    if file_path:
+        image.save(file_path)
+        print(f"Image saved to: {file_path}")
+        try:
+            os.remove(file_path)
+        except OSError as e:
+            print(f"Error deleting image: {e}")
+
+def TakePictureButtonFunction():
+    command = "TakeScreenShot"
+    client_socket.sendall(command.encode())
+    ReceiveImage()
+
+    new_image = Image.open("received_image.png")
+    new_image = new_image.resize((600, 450), Image.LANCZOS)
+    new_photo = ImageTk.PhotoImage(new_image, master=root2)
+    label.config(image=new_photo)
+    label.image = new_photo
+
+def display_image(image_path):
+    global root2
+    root2 = tk.Tk()
+    root2.title("Captured Image")
+    root2.geometry("800x600")
+    root2.resizable(False, False)
+
+    image = Image.open(image_path)
+    image = image.resize((600, 450), Image.LANCZOS)  # Resize the image using LANCZOS resampling
+    photo = ImageTk.PhotoImage(image, master = root2)
+    global label
+    label = tk.Label(root2, image=photo)
+    label.pack()
+
+    take_picture_button = tk.Button(root2, text="Take Picture", command=lambda: TakePictureButtonFunction())
+    take_picture_button.pack()
+
+    save_button = tk.Button(root2, text="Save", command=lambda: SaveImage(image_path))
+    save_button.pack()
+    root2.mainloop()
+
+def ReceiveImage(image_path="received_image.png"):
+    file = open(image_path, "wb")
     isBreak = False;
     while True:
         if (isBreak):
             break
         image_chunk = client_socket.recv(2048)
-        # print(f"{len(image_chunk)} writing..")
         if (len(image_chunk) < 2048):
             isBreak = True
         if (len(image_chunk) == 0):
@@ -87,6 +122,10 @@ def Handle_take_screenshot():
         file.write(image_chunk)
     file.close()
     print("picture received")
+
+def Handle_take_screenshot():
+    ReceiveImage()
+    display_image("received_image.png")
 
 def Handle_app_running_check():
     pass
@@ -99,9 +138,6 @@ def Handle_shutdown_computer():
 
 def Handle_fix_registry():
     pass
-
-
-
 
 # Building the Client UI
 root = tk.Tk()
@@ -215,12 +251,6 @@ if __name__ == "__main__":
 
     
 # Function:
-# def TakeScreenShot():
-#     send_command("TakeScreenShot")
-#     filename = "pic1.png"
-#     # screenshot = pyautogui.screenshot()
-#     # screenshot.save(filename)
-#     print("Taken picture...")
 
 # def ShutDown(countdown_seconds=10):
 #     send_command("ShutDown")
