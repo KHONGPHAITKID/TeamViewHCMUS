@@ -201,7 +201,7 @@ ShutDownButton = tk.Button(
     font=("Helvetica", 15, "bold"),
     relief=tk.RAISED,
     bd=3,
-    command=lambda: send_command("ShutDown"),
+    command=lambda: send_command("ShutDownComputer"),
     highlightthickness=2,
 )
 ShutDownButton.place(x=185, y=241)
@@ -245,40 +245,5 @@ QuitButton = tk.Button(
 )
 QuitButton.place(x=522, y=399)
 
-# Example usage
 if __name__ == "__main__":
     root.mainloop()
-
-    
-# Function:
-
-# def ShutDown(countdown_seconds=10):
-#     send_command("ShutDown")
-#     print("ShuttingDown")
-    # print(f"Initiating system shutdown in {countdown_seconds} seconds...")
-
-    # # Create a countdown window
-    # root = tk.Tk()
-    # root.title("Shutdown Countdown")
-    # root.geometry("300x100")
-    
-    # label = tk.Label(root, text="System will shut down in", font=("Helvetica", 14))
-    # label.pack(pady=20)
-
-    # time_left = countdown_seconds
-    # label_time = tk.Label(root, text=str(time_left), font=("Helvetica", 30))
-    # label_time.pack()
-
-    # def update_time():
-    #     nonlocal time_left
-    #     label_time.config(text=str(time_left))
-    #     if time_left > 0:
-    #         time_left -= 1
-    #         root.after(1000, update_time)
-    #     else:
-    #         root.destroy()
-    #         print("Shutting down the system...")
-    #         os.system("sudo shutdown -h now")
-
-    # root.after(1000, update_time)
-    # root.mainloop()

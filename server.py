@@ -3,6 +3,7 @@ import pyautogui
 from PIL import ImageGrab
 import io
 import os
+import tkinter as tk
 
 HOST = "127.0.0.1"
 PORT = 65431
@@ -38,8 +39,35 @@ def app_running_check(app_name):
 def process_running_check(process_name):
     print(f"Checking if {process_name} is running...")
 
-def shutdown_computer():
-    print("Shutting down the computer...")
+def ShutDown(countdown_seconds=10):
+    print("ShuttingDown")
+    print(f"Initiating system shutdown in {countdown_seconds} seconds...")
+
+    # Create a countdown window
+    ShutDownRoot = tk.Tk()
+    ShutDownRoot.title("Shutdown Countdown")
+    ShutDownRoot.geometry("300x100")
+    
+    label = tk.Label(ShutDownRoot, text="System will shut down in", font=("Helvetica", 14))
+    label.pack(pady=20)
+
+    time_left = countdown_seconds
+    label_time = tk.Label(ShutDownRoot, text=str(time_left), font=("Helvetica", 30))
+    label_time.pack()
+
+    def update_time():
+        nonlocal time_left
+        label_time.config(text=str(time_left))
+        if time_left > 0:
+            time_left -= 1
+            ShutDownRoot.after(1000, update_time)
+        else:
+            ShutDownRoot.destroy()
+            print("Shutting down the system...")
+            os.system("sudo shutdown -h now")
+
+    ShutDownRoot.after(1000, update_time)
+    ShutDownRoot.mainloop()
 
 def fix_registry():
     print("Fixing the registry...")
@@ -56,7 +84,7 @@ def handle_command(client_socket, command):
     elif parts[0] == "ProcessRunningChecking":
         process_running_check(parts[1])
     elif parts[0] == "ShutDownComputer":
-        shutdown_computer()
+        ShutDown()
     elif parts[0] == "FixRegistry":
         fix_registry()
 
