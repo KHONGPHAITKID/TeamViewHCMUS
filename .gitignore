@@ -1,5 +1,6 @@
 __pycache__
-test.py
+test*
 .screenshot*
 *.png
 *.jpg
+log*
