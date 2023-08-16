@@ -50,16 +50,20 @@ def handle_client(client_socket):
             listener_thread = threading.Thread(target=Listening, args=(client_socket, stop_event))
             listener_thread.start()
         if (data == "UNHOOK"):
-            stop_event.set()
             if listener_thread:
+                stop_event.set()
                 listener_thread.join()
                 print("Listener thread stopped.")
+                listener_thread = None
         if (data == "PRINT"):
+            hasThread = False
             # Stop the thread
             if listener_thread:
                 stop_event.set()
                 listener_thread.join()
                 print("Listener thread stopped.")
+                hasThread = True
+                print(f"hasThread : {hasThread}")
 
             if os.path.exists("log.txt"):
                 with open('log.txt', 'rb') as file:
@@ -69,9 +73,10 @@ def handle_client(client_socket):
             client_socket.sendall(file_data)
 
             # Recreate the thread
-            stop_event.clear()
-            listener_thread = threading.Thread(target=Listening, args=(client_socket, stop_event))
-            listener_thread.start()
+            if (hasThread):
+                stop_event.clear()
+                listener_thread = threading.Thread(target=Listening, args=(client_socket, stop_event))
+                listener_thread.start()
         if (data == "DELETE"):
             if os.path.exists('log.txt'):
                 os.remove('log.txt')
@@ -173,6 +178,7 @@ def handle_command(client_socket, command):
         fix_registry()
 
 def start_server():
+    global server_socket
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((HOST, PORT))
     server_socket.listen(1)
@@ -194,5 +200,38 @@ def start_server():
         client_socket.close()
         print(f"Connection with {client_address} closed")
 
+def close_server():
+    try:
+        server_socket.shutdown(socket.SHUT_RDWR)  # Shutdown the socket's read and write operations
+        server_socket.close()  # Close the socket
+        print("Server socket closed.")
+    except Exception as e:
+        print("Error while closing server socket:", e)
+
+def on_closing():
+    close_server()  # Close the client socket
+    print("Client socket closed.")
+    root.destroy()
+
+def start_server_thread():
+    server_thread = threading.Thread(target=start_server)
+    server_thread.daemon = True
+    server_thread.start()
+
+####################################################
+# Server UI
+root = tk.Tk()
+root.title("Server UI")
+root.geometry("300x200")
+root.resizable(False, False)
+
+open_button = tk.Button(root, text="Open", width=6, height=3, command=start_server_thread)
+open_button.pack(pady=10)
+
+close_button = tk.Button(root, text="Close", width=6, height=3, command=close_server)
+close_button.pack(pady=10)
+
+root.protocol("WM_DELETE_WINDOW", on_closing)
+
 if __name__ == "__main__":
-    start_server()
+    root.mainloop()
