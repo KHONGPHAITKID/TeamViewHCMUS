@@ -2,6 +2,7 @@ import socket
 import psutil
 import subprocess
 import winreg
+import pygetwindow as gw
 
 def terminate_process(process_name):
     isFlag = False
