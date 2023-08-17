@@ -165,7 +165,7 @@ def display_image(image_path):
 #4: Listen and receive image through TCP connection
 def ReceiveImage(image_path="received_image.png"):
     file = open(image_path, "wb")
-    isBreak = False;
+    isBreak = False
     while True:
         if (isBreak):
             break
