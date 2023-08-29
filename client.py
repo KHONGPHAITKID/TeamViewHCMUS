@@ -1,7 +1,14 @@
+# import server
 import tkinter as tk
-from tkinter import messagebox,filedialog,scrolledtext
+from tkinter import simpledialog,messagebox,filedialog,scrolledtext
 import socket
 import os
+import pygetwindow as gw
+from PIL import ImageGrab
+import subprocess
+import psutil
+import chardet
+
 from PIL import Image, ImageTk, ImageGrab
 
 host = "127.0.0.1"
@@ -42,9 +49,9 @@ def send_command(command):
         Handle_send_keystroke()
     elif parts[0] == "TakeScreenShot":
         Handle_take_screenshot()
-    elif parts[0] == "AppRunningChecking":
+    elif parts[0] == "AppRunning":
         Handle_app_running_check()
-    elif parts[0] == "ProcessRunningChecking":
+    elif parts[0] == "ProcessRunning":
         Handle_process_running_check()
     elif parts[0] == "ShutDownComputer":
         Handle_shutdown_computer()
@@ -67,9 +74,6 @@ def CreateUI_SendKeyStroke():
     def hook():
         command = "HOOK"
         client_socket.sendall(command.encode())
-        # while True:
-        #     data = client_socket.recv(1024).decode()
-        #     text_area.insert(tk.END, data)
     def unhook():
         command = "UNHOOK"
         client_socket.sendall(command.encode())
@@ -77,15 +81,15 @@ def CreateUI_SendKeyStroke():
         command = "PRINT"
         client_socket.sendall(command.encode())
         file_data = client_socket.recv(1024)
-        log_content = file_data.decode('utf-8')
+        encoding = chardet.detect(file_data)['encoding']
+        log_content = file_data.decode(encoding)
         text_area.delete(1.0, tk.END)
         text_area.insert(tk.END, log_content)
+
     def delete_logs():
         command = "DELETE"
         client_socket.sendall(command.encode())
-        # response = client_socket.recv(1024)
         text_area.delete(1.0, tk.END)
-        # print(response.decode())
 
     # Create the main window
     KeyStrokeRoot = tk.Tk()
@@ -184,14 +188,177 @@ def Handle_take_screenshot():
     display_image("received_image.png")
 
 #####################################################################
+# APP RUNNING
+def get_apps_in_taskbar():
+    taskbar_apps = []
+
+    windows = gw.getWindowsWithTitle('')
+    for index, window in enumerate(windows):
+        taskbar_apps.append((index, window.title))
+
+    return taskbar_apps
+
+def open_application(app_name):
+    try:
+        subprocess.Popen([app_name], shell=True)
+    except FileNotFoundError:
+        messagebox.showinfo("Failed", "Application '{app_name}' not found or could not be opened.")
+
+def close_app_by_id(app_id):
+    windows = gw.getWindowsWithTitle('')
+    if app_id < len(windows):
+        windows[app_id].close()
+        messagebox.showinfo("Success", "Closed application with ID {app_id}")
+    else:
+        messagebox("Failed", "No application found with ID {app_id}")
+
+def create_AppRunning_UI():
+    def on_closing():
+        command = "CLOSE"
+        client_socket.sendall(command.encode())
+        AppRunningRoot.destroy()
+        
+    def start():
+        command = "START"
+        client_socket.sendall(command.encode())
+        app_name = simpledialog.askstring("Application Name", "Enter the Application Name:")
+        if app_name:
+            open_application(app_name)
+        
+    def kill():
+        command = "KILL"
+        client_socket.sendall(command.encode())
+        app_id = simpledialog.askinteger("Application ID", "Enter the Application ID:")
+        if app_id is not None:
+            close_app_by_id(app_id)
+        
+    def show():
+        app_text.delete(1.0, tk.END)
+        command = "SHOW"
+        client_socket.sendall(command.encode())
+        taskbar_app = get_apps_in_taskbar()
+        if taskbar_app:
+            for app_id, app_title in taskbar_app:
+                if len(app_title) > 0:
+                    app_text.insert(tk.END, f"ID: {app_id}, Title: {app_title}\n")
+                    
+    def delete():
+        command = "DELETE"
+        client_socket.sendall(command.encode())
+        app_text.delete(1.0, tk.END)
+
+    # Create the main window
+    AppRunningRoot = tk.Tk()
+    AppRunningRoot.title("AppRunning UI")
+    AppRunningRoot.geometry("800x600")
+
+    # Create buttons
+    start_button = tk.Button(AppRunningRoot, text="Start", command=start)
+    kill_button = tk.Button(AppRunningRoot, text="Kill", command=kill)
+    show_button = tk.Button(AppRunningRoot, text="Show", command=show)
+    delete_button = tk.Button(AppRunningRoot, text="Delete", command=delete)
+
+    app_text = tk.Text(AppRunningRoot)
+    app_text.pack(pady=10)
+
+    AppRunningRoot.protocol("WM_DELETE_WINDOW", on_closing)
+    # Place buttons and text area in the UI
+    start_button.pack(pady=10)
+    kill_button.pack(pady=10)
+    show_button.pack(pady=10)
+    delete_button.pack(pady=10)
+    AppRunningRoot.mainloop()
+    
 # App running 
 def Handle_app_running_check():
-    pass
+    create_AppRunning_UI()
 
 #####################################################################
-# Process running
+# PROCESS RUNNING
+
+def terminate_processwithID(process_ID):
+    isFlag = False
+    for process in psutil.process_iter(attrs=['pid', 'name']):
+        if process.info['pid'] == process_ID:
+            try:
+                isFlag = True
+                psutil.Process(process.info['pid']).terminate()
+            except psutil.NoSuchProcess:
+                return f"Process {process_ID} not found"
+            except psutil.AccessDenied:
+                return f"Access denied to terminate {process_ID}"
+    if isFlag == False:
+        messagebox.showinfo('Failed', 'No proccess with that name.')
+    else:
+        messagebox.showinfo('Success', 'Process killed.')
+
+def printProcess():
+    for process in psutil.process_iter(attrs=['pid','name']):
+        print(f"ID: {process.info['pid']}, Name: {process.info['name']}")
+
+def open_process(process_name):
+    try:
+        subprocess.Popen([process_name], shell=True)
+    except FileNotFoundError:
+        messagebox.showinfo("Failed", "Application '{app_name}' not found or could not be opened.")
+
+def create_ProcessRunning_UI():
+    def on_closing():
+        command = "CLOSE"
+        client_socket.sendall(command.encode())
+        ProcessRunningRoot.destroy()
+        
+    def start():
+        command = "START"
+        client_socket.sendall(command.encode())
+        process_name = simpledialog.askstring("Process ID", "Enter the Process name:")
+        if process_name is not None:
+            open_process(process_name)
+        
+    def kill():
+        command = "KILL"
+        client_socket.sendall(command.encode())
+        process_id = simpledialog.askinteger("Process ID", "Enter the Process ID:")
+        if process_id is not None:
+            terminate_processwithID(process_id)
+        
+    def show():
+        command = "SHOW"
+        client_socket.sendall(command.encode())
+        # printProcess()
+        process_text.delete(1.0, tk.END)  # Clear the text widget before adding new information
+        for process in psutil.process_iter(attrs=['pid', 'name']):
+            process_text.insert(tk.END, f"ID: {process.info['pid']}, Name: {process.info['name']}\n")
+ 
+    def delete():
+        command = "DELETE"
+        client_socket.sendall(command.encode())
+        process_text.delete(1.0, tk.END)  # Clear the text widget before adding new information
+
+    # Create the main window
+    ProcessRunningRoot = tk.Tk()
+    ProcessRunningRoot.title("ProcessRunning UI")
+    ProcessRunningRoot.geometry("800x600")
+
+    # Create buttons
+    start_button = tk.Button(ProcessRunningRoot, text="Start", command=start)
+    kill_button = tk.Button(ProcessRunningRoot, text="Kill", command=kill)
+    show_button = tk.Button(ProcessRunningRoot, text="Show", command=show)
+    delete_button = tk.Button(ProcessRunningRoot, text="Delete", command=delete)
+
+    process_text = tk.Text(ProcessRunningRoot)
+    process_text.pack(pady=10)
+
+    ProcessRunningRoot.protocol("WM_DELETE_WINDOW", on_closing)
+    # Place buttons and text area in the UI
+    start_button.pack(pady=10)
+    kill_button.pack(pady=10)
+    show_button.pack(pady=10)
+    delete_button.pack(pady=10)
+    ProcessRunningRoot.mainloop()
+#Process running
 def Handle_process_running_check():
-    pass
+    create_ProcessRunning_UI()
 
 #####################################################################
 # Shutdown
@@ -206,6 +373,7 @@ def Handle_fix_registry():
 #####################################################################
 # Building the Client UI
 root = tk.Tk()
+root.title("Client UI")
 root.geometry("650x550")
 root.resizable(False, False)
 

