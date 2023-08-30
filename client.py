@@ -1,17 +1,14 @@
-# import server
 import tkinter as tk
 from tkinter import simpledialog,messagebox,filedialog,scrolledtext
 import socket
 import os
-import pygetwindow as gw
-from PIL import ImageGrab
-import subprocess
-import psutil
 import chardet
-
+import json
 from PIL import Image, ImageTk, ImageGrab
 
-host = "127.0.0.1"
+
+# host = "127.0.0.1"
+host = ""
 port = 65431
 timeout = 3
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -27,7 +24,7 @@ def connect(user_input):
     global isConnected
     try:
         client_socket.settimeout(timeout)
-        client_socket.connect((host, port))
+        client_socket.connect((user_input, port))
         isConnected = True
         print("Connection successful.")
         messagebox.showinfo("Success", "Connection successful!")
@@ -42,8 +39,8 @@ def send_command(command):
     if (isConnected == False):
         messagebox.showinfo("Error", "Connection failed!")
         return
-    client_socket.sendall(command.encode())
-    print(command)
+    # client_socket.sendall(command.encode())
+    # print(command)
     parts = command.split()
     if parts[0] == "SendKeyStroke":
         Handle_send_keystroke()
@@ -113,7 +110,9 @@ def CreateUI_SendKeyStroke():
     text_area.pack(pady=20)
     KeyStrokeRoot.mainloop()
 
-def Handle_send_keystroke():    
+def Handle_send_keystroke(): 
+    command = "SendKeyStroke"
+    client_socket.sendall(command.encode())   
     CreateUI_SendKeyStroke()
 
 #####################################################################
@@ -127,6 +126,7 @@ def SaveImage(image_path):
     if file_path:
         image.save(file_path)
         print(f"Image saved to: {file_path}")
+    else:
         try:
             os.remove(file_path)
         except OSError as e:
@@ -134,8 +134,6 @@ def SaveImage(image_path):
 
 #2: Used for updating the picture constantly
 def TakePictureButtonFunction():
-    command = "TakeScreenShot"
-    client_socket.sendall(command.encode())
     ReceiveImage()
 
     new_image = Image.open("received_image.png")
@@ -168,19 +166,33 @@ def display_image(image_path):
 
 #4: Listen and receive image through TCP connection
 def ReceiveImage(image_path="received_image.png"):
-    file = open(image_path, "wb")
-    isBreak = False
-    while True:
-        if (isBreak):
-            break
-        image_chunk = client_socket.recv(2048)
-        if (len(image_chunk) < 2048):
-            isBreak = True
-        if (len(image_chunk) == 0):
-            break
-        file.write(image_chunk)
-    file.close()
-    print("picture received")
+    command = "TakeScreenShot"
+    client_socket.sendall(command.encode())
+    # image_size = int(client_socket.recv(1024).decode())
+    picture_size = int(client_socket.recv(1024).decode())
+    client_socket.send("ACK".encode())
+    received_data = b""
+    chunk_size = 1024
+    while len(received_data) < picture_size:
+        chunk = client_socket.recv(chunk_size)
+        received_data += chunk
+        client_socket.send("ACK".encode())
+    with open(image_path, 'wb') as file:
+        file.write(received_data)
+    print("Picture received successfully!")
+    # file = open(image_path, "wb")
+    # isBreak = False
+    # while True:
+    #     if (isBreak):
+    #         break
+    #     image_chunk = client_socket.recv(2048)
+    #     if (len(image_chunk) < 2048):
+    #         isBreak = True
+    #     if (len(image_chunk) == 0):
+    #         break
+    #     file.write(image_chunk)
+    # file.close()
+    # print("picture received")
 
 #5: main function for this task
 def Handle_take_screenshot():
@@ -189,62 +201,49 @@ def Handle_take_screenshot():
 
 #####################################################################
 # APP RUNNING
-def get_apps_in_taskbar():
-    taskbar_apps = []
-
-    windows = gw.getWindowsWithTitle('')
-    for index, window in enumerate(windows):
-        taskbar_apps.append((index, window.title))
-
-    return taskbar_apps
-
-def open_application(app_name):
-    try:
-        subprocess.Popen([app_name], shell=True)
-    except FileNotFoundError:
-        messagebox.showinfo("Failed", "Application '{app_name}' not found or could not be opened.")
-
-def close_app_by_id(app_id):
-    windows = gw.getWindowsWithTitle('')
-    if app_id < len(windows):
-        windows[app_id].close()
-        messagebox.showinfo("Success", "Closed application with ID {app_id}")
-    else:
-        messagebox("Failed", "No application found with ID {app_id}")
 
 def create_AppRunning_UI():
     def on_closing():
-        command = "CLOSE"
-        client_socket.sendall(command.encode())
         AppRunningRoot.destroy()
         
     def start():
-        command = "START"
-        client_socket.sendall(command.encode())
+        command = "AppRunning START "
+        # client_socket.sendall(command.encode())
         app_name = simpledialog.askstring("Application Name", "Enter the Application Name:")
         if app_name:
-            open_application(app_name)
+            command += str(app_name)
+            client_socket.sendall(command.encode())
+        message = client_socket.recv(1024).decode()
+        if message == "SUCCESS":
+            messagebox.showinfo("Success", "Application have been opened.")
+        elif message == "FAILED":
+            messagebox.showinfo("Failed", "Application not found or could not be opened.")
         
     def kill():
-        command = "KILL"
-        client_socket.sendall(command.encode())
+        command = "AppRunning KILL "
         app_id = simpledialog.askinteger("Application ID", "Enter the Application ID:")
         if app_id is not None:
-            close_app_by_id(app_id)
+            command += str(app_id)
+            client_socket.sendall(command.encode())
+            # close_app_by_id(app_id)
+        message = client_socket.recv(1024).decode()
+        if message == "SUCCESS":
+            messagebox.showinfo("Success", "Application have been killed.")
+        elif message == "FAILED":
+            messagebox.showinfo("Failed", "Application not found or could not be killed.")
         
     def show():
-        app_text.delete(1.0, tk.END)
-        command = "SHOW"
+        command = "AppRunning SHOW APP"
         client_socket.sendall(command.encode())
-        taskbar_app = get_apps_in_taskbar()
+        received_data = client_socket.recv(1024).decode()
+        taskbar_app = json.loads(received_data)
         if taskbar_app:
+            app_text.delete(1.0, tk.END)
             for app_id, app_title in taskbar_app:
                 if len(app_title) > 0:
                     app_text.insert(tk.END, f"ID: {app_id}, Title: {app_title}\n")
                     
     def delete():
-        command = "DELETE"
-        client_socket.sendall(command.encode())
         app_text.delete(1.0, tk.END)
 
     # Create the main window
@@ -276,65 +275,58 @@ def Handle_app_running_check():
 #####################################################################
 # PROCESS RUNNING
 
-def terminate_processwithID(process_ID):
-    isFlag = False
-    for process in psutil.process_iter(attrs=['pid', 'name']):
-        if process.info['pid'] == process_ID:
-            try:
-                isFlag = True
-                psutil.Process(process.info['pid']).terminate()
-            except psutil.NoSuchProcess:
-                return f"Process {process_ID} not found"
-            except psutil.AccessDenied:
-                return f"Access denied to terminate {process_ID}"
-    if isFlag == False:
-        messagebox.showinfo('Failed', 'No proccess with that name.')
-    else:
-        messagebox.showinfo('Success', 'Process killed.')
-
-def printProcess():
-    for process in psutil.process_iter(attrs=['pid','name']):
-        print(f"ID: {process.info['pid']}, Name: {process.info['name']}")
-
-def open_process(process_name):
-    try:
-        subprocess.Popen([process_name], shell=True)
-    except FileNotFoundError:
-        messagebox.showinfo("Failed", "Application '{app_name}' not found or could not be opened.")
-
 def create_ProcessRunning_UI():
     def on_closing():
-        command = "CLOSE"
-        client_socket.sendall(command.encode())
         ProcessRunningRoot.destroy()
         
     def start():
-        command = "START"
-        client_socket.sendall(command.encode())
+        command = "ProcessRunning START "
         process_name = simpledialog.askstring("Process ID", "Enter the Process name:")
         if process_name is not None:
-            open_process(process_name)
+            command += process_name
+            client_socket.sendall(command.encode())
+        message = client_socket.recv(1024).decode()
+        if message == "SUCCESS":
+            messagebox.showinfo("Success", "Process have been opened.")
+        elif message == "FAILED":
+            messagebox.showinfo("Failed", "Process not found or could not be opened.")
         
     def kill():
-        command = "KILL"
-        client_socket.sendall(command.encode())
+        command = "ProcessRunning KILL "
         process_id = simpledialog.askinteger("Process ID", "Enter the Process ID:")
         if process_id is not None:
-            terminate_processwithID(process_id)
+            command += str(process_id)
+            client_socket.sendall(command.encode())
+        message = client_socket.recv(1024).decode()
+        if message == "SUCCESS":
+            messagebox.showinfo("Success", "Process have been killed.")
+        elif message == "FAILED":
+            messagebox.showinfo("Failed", "Process not found or could not be killed.")
         
     def show():
-        command = "SHOW"
+        command = "ProcessRunning SHOW PROCESS"
         client_socket.sendall(command.encode())
-        # printProcess()
-        process_text.delete(1.0, tk.END)  # Clear the text widget before adding new information
-        for process in psutil.process_iter(attrs=['pid', 'name']):
-            process_text.insert(tk.END, f"ID: {process.info['pid']}, Name: {process.info['name']}\n")
+
+        received_data = ""
+        while True:
+            part = client_socket.recv(1024).decode()
+            received_data += part
+            if len(part) < 1024:
+                # Either 0 or end of data
+                break
+
+        client_socket.sendall("ACK".encode())
+
+        taskbar_process = json.loads(received_data)
+        if taskbar_process:
+            process_text.delete(1.0, tk.END)
+            for process_id, process_title in taskbar_process:
+                if len(process_title) > 0:
+                    process_text.insert(tk.END, f"ID: {process_id}, Title: {process_title}\n")
  
     def delete():
-        command = "DELETE"
-        client_socket.sendall(command.encode())
-        process_text.delete(1.0, tk.END)  # Clear the text widget before adding new information
-
+        process_text.delete(1.0, tk.END)
+        
     # Create the main window
     ProcessRunningRoot = tk.Tk()
     ProcessRunningRoot.title("ProcessRunning UI")
@@ -363,7 +355,8 @@ def Handle_process_running_check():
 #####################################################################
 # Shutdown
 def Handle_shutdown_computer():
-    pass
+    command = "ShutDownComputer"
+    client_socket.sendall(command.encode())
 
 #####################################################################
 # Fix Registry
