@@ -8,6 +8,8 @@ To run the project, follow these steps:
 Make sure you have Python installed on both computers. The project requires the following Python packages, which can be installed using pip:
 
 `pip install package1 package2 package3`
+or
+`pip install -r requirements.txt`
 
 2. Start the Server
 On one computer, open a terminal or command prompt and navigate to the project's directory. Then, run the following command to start the server:
@@ -30,5 +32,7 @@ Once the client has connected to the server, you should see a message indicating
 # Troubleshooting
 If you encounter any issues while running the project, consider the following troubleshooting steps:
 
-Make sure both computers are connected to the same network.
+Make sure both computers are connected to each other.
 Double-check that you have installed all the required packages as mentioned in the setup section.
+In the server.py, change the host into your own server address (i let defaul as 127.0.0.1).
+Make sure the port number in the client.py and server.py is the same.
