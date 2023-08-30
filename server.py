@@ -1,13 +1,15 @@
 import socket
 import pyautogui
-from PIL import ImageGrab
 import io
 import os
 import tkinter as tk
 import threading
 from pynput import keyboard
-import atexit
 import platform
+import pygetwindow as gw
+import json
+import subprocess
+import psutil
 
 HOST = "127.0.0.1"
 PORT = 65431
@@ -100,14 +102,39 @@ def take_screenshot(client_socket):
     screenshot = pyautogui.screenshot()
     screenshot.save("screenshot.png") 
 
-    file = open("screenshot.png", 'rb')
-    image_data = file.read(2048)
-    while (image_data):
-        client_socket.send(image_data)
-        image_data = file.read(2048)
-    file.close()
-    print("Screenshot sent")
+    picture_path = "screenshot.png"
+    with open(picture_path, 'rb') as file:
+        picture_data = file.read()
+    picture_size = len(picture_data)
+    client_socket.send(str(picture_size).encode())
+    ack = client_socket.recv(1024).decode()
+    if ack != "ACK":
+        print("Error: Acknowledgment not received for picture size.")
+        return
+    chunk_size = 1024
+    for i in range(0, picture_size, chunk_size):
+        chunk = picture_data[i:i+chunk_size]
+        while True:
+            client_socket.sendall(chunk)
+            ack = client_socket.recv(1024).decode()
+            if ack == "ACK":
+                break
+            else:
+                print("Error: Acknowledgment not received for chunk. Retrying...")
+    print("Picture sent successfully!")
 
+
+    # Picture sent successfully
+    print("Picture sent successfully!")
+    # file = open("screenshot.png", 'rb')
+    # image_data = file.read(2048)
+    # while (image_data):
+    #     client_socket.send(image_data)
+    #     image_data = file.read(2048)
+    # file.close()
+    # print("Screenshot sent")
+    
+    #############################
     # Remove the picture
     image_path = "screenshot.png"
     try:
@@ -118,15 +145,99 @@ def take_screenshot(client_socket):
 
 #####################################################################
 # Running Apps
-def app_running_check(app_name):
-    print(f"Checking if {app_name} is running...")
+def app_running_handle(client_socket, command):
+    # print("CHECKING " + str(len(command)))
+    if len(command) == 1:
+        pass
+    elif command[1] == "SHOW":
+        taskbar_apps = get_apps_in_taskbar()
+        json_app_list = json.dumps(taskbar_apps)
+        client_socket.send(json_app_list.encode())
+    elif command[1] == "KILL":
+        close_app_by_id(client_socket, command[2])
+    elif command[1] == "START":
+        open_application(client_socket, command[2])
 
+def get_apps_in_taskbar():
+    taskbar_apps = []
+
+    windows = gw.getWindowsWithTitle('')
+    for index, window in enumerate(windows):
+        taskbar_apps.append([index, window.title])
+
+    return taskbar_apps
+
+def open_application(client_socket, app_name):
+    try:
+        subprocess.Popen([app_name], shell=True)
+        command = "SUCCESS"
+        client_socket.send(command.encode())
+    except FileNotFoundError:
+        command = "FAILED"
+        client_socket.send(command.encode())
+        # messagebox.showinfo("Failed", "Application '{app_name}' not found or could not be opened.")
+
+def close_app_by_id(client_socket, app_id):
+    app_id = int(app_id)
+    windows = gw.getWindowsWithTitle('')
+    if app_id < len(windows):
+        windows[app_id].close()
+        command = "SUCCESS"
+        client_socket.send(command.encode())
+    else:
+        command = "FAILED"
+        client_socket.send(command.encode())
 
 #####################################################################
 # Running Process
-def process_running_check(process_name):
-    print(f"Checking if {process_name} is running...")
+def process_running_handle(client_socket, command):
+    if len(command) == 1:
+        pass
+    elif command[1] == "SHOW":
+        taskbar_processes = get_process_info()
+        json_process_list = json.dumps(taskbar_processes)
+        client_socket.sendall(json_process_list.encode())
+        ack = client_socket.recv(1024).decode()
+        if ack != "ACK":
+            # Resend data if acknowledgment not received
+            client_socket.sendall(json_process_list.encode())
+    elif command[1] == "KILL":
+        terminate_processwithID(client_socket, command[2])
+    elif command[1] == "START":
+        open_process(client_socket, command[2])
 
+def get_process_info():
+    process_info = []
+    for process in psutil.process_iter(attrs=['pid', 'name']):
+        process_info.append([process.info['pid'], process.info['name']])
+    return process_info
+
+def terminate_processwithID(client_socket, process_ID):
+    isFlag = False
+    for process in psutil.process_iter(attrs=['pid', 'name']):
+        if process.info['pid'] == int(process_ID):
+            try:
+                isFlag = True
+                psutil.Process(process.info['pid']).kill()
+            except psutil.NoSuchProcess:
+                break
+            except psutil.AccessDenied:
+                break
+    if isFlag == False:
+        command = "FAILED"
+        client_socket.send(command.encode())
+    else:
+        command = "SUCCESS"
+        client_socket.send(command.encode())
+
+def open_process(client_socket, process_name):
+    try:
+        subprocess.Popen([process_name], shell=True)
+        command = "SUCCESS"
+        client_socket.send(command.encode())
+    except FileNotFoundError:
+        command = "FAILED"
+        client_socket.send(command.encode())
 #####################################################################
 # Shutdown
 def ShutDown(countdown_seconds=10):
@@ -173,10 +284,10 @@ def handle_command(client_socket, command):
         send_keystroke(client_socket)
     elif parts[0] == "TakeScreenShot":
         take_screenshot(client_socket)
-    elif parts[0] == "AppRunningChecking":
-        app_running_check(parts[1])
-    elif parts[0] == "ProcessRunningChecking":
-        process_running_check(parts[1])
+    elif parts[0] == "AppRunning":
+        app_running_handle(client_socket, parts)
+    elif parts[0] == "ProcessRunning":
+        process_running_handle(client_socket, parts)
     elif parts[0] == "ShutDownComputer":
         ShutDown()
     elif parts[0] == "FixRegistry":
